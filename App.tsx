@@ -125,6 +125,8 @@ const Portal: React.FC<{ user: User, onLogout: () => void, onUpdateUser: (data: 
     ]).then(([accs, reqs]) => {
       setAccounts(accs);
       setRequests(reqs);
+    }).catch((err) => {
+      console.warn('Could not load user data from Supabase:', err);
     });
   }, [user.id]);
 
