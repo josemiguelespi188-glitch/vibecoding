@@ -214,7 +214,7 @@ export const Accounts: React.FC<AccountsProps> = ({ user, accounts, onAddAccount
 
                <div className="space-y-1.5">
                   <label className="text-[10px] uppercase tracking-widest font-bold text-[#8FAEDB]">Ledger Display Name</label>
-                  <input name="display_name" required type="text" className="w-full bg-[#081C3A] border border-white/10 rounded px-4 py-3 text-white text-sm focus:border-[#2F80ED] outline-none" placeholder="e.g. Vanderbilt Family Office" />
+                  <input name="display_name" required type="text" className="w-full bg-[#081C3A] border border-white/10 rounded px-4 py-3 text-white text-sm focus:border-[#2F80ED] outline-none" placeholder="e.g. James R. Holloway" />
                </div>
 
                {/* Conditional Fields */}
