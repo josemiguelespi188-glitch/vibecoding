@@ -1,14 +1,14 @@
 
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Card, Badge, Button } from './UIElements';
-import { 
-  ShieldCheck, 
-  Upload, 
-  CheckCircle2, 
-  AlertCircle, 
-  FileText, 
-  User, 
-  ChevronDown, 
+import {
+  ShieldCheck,
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  FileText,
+  User,
+  ChevronDown,
   Info,
   Clock,
   Briefcase,
@@ -19,6 +19,7 @@ import {
   Search
 } from 'lucide-react';
 import { DocumentStatus, InvestmentAccountType, InvestmentAccount } from '../types';
+import { uploadDocument } from '../firebase';
 
 interface AccreditationProps {
   user: any;
@@ -41,7 +42,9 @@ export const Accreditation: React.FC<AccreditationProps> = ({ user, accounts }) 
   const [uploadedDocNames, setUploadedDocNames] = useState<Set<string>>(new Set());
   const [showAccreditationInfo, setShowAccreditationInfo] = useState(false);
   const [uploadModalDoc, setUploadModalDoc] = useState<string | null>(null);
-  const [isSimulatingUpload, setIsSimulatingUpload] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,16 +92,33 @@ export const Accreditation: React.FC<AccreditationProps> = ({ user, accounts }) 
   const handleOpenUpload = (docName: string) => {
     setUploadModalDoc(docName);
     setSelectedFile(null);
+    setUploadError(null);
+    setUploadProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleFinalUpload = async () => {
     if (!uploadModalDoc || !selectedFile) return;
-    setIsSimulatingUpload(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setUploadedDocNames(prev => new Set(prev).add(uploadModalDoc));
-    setIsSimulatingUpload(false);
-    setUploadModalDoc(null);
+    setIsUploading(true);
+    setUploadError(null);
+    setUploadProgress(0);
+    try {
+      await uploadDocument(
+        user.id,
+        uploadModalDoc,
+        selectedFile,
+        pct => setUploadProgress(pct)
+      );
+      setUploadedDocNames(prev => new Set(prev).add(uploadModalDoc));
+      setUploadModalDoc(null);
+    } catch (err: unknown) {
+      const msg = (err as { message?: string }).message ?? 'Upload failed';
+      setUploadError(msg.includes('storage/unauthorized')
+        ? 'Permission denied. Please sign in with Google to upload documents.'
+        : 'Upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const getStatusBadge = (status: DocumentStatus) => {
@@ -126,7 +146,7 @@ export const Accreditation: React.FC<AccreditationProps> = ({ user, accounts }) 
   };
 
   const totalRequiredCount = GLOBAL_DOCS.length + requiredEntityDocs.length;
-  const totalCompletedCount = Array.from(uploadedDocNames).filter(d => 
+  const totalCompletedCount = ([...uploadedDocNames] as string[]).filter((d: string) =>
     GLOBAL_DOCS.includes(d) || requiredEntityDocs.includes(d)
   ).length;
 
@@ -264,14 +284,14 @@ export const Accreditation: React.FC<AccreditationProps> = ({ user, accounts }) 
       {/* Simulated Institutional Upload Modal */}
       {uploadModalDoc && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#081C3A]/95 backdrop-blur-md" onClick={() => !isSimulatingUpload && setUploadModalDoc(null)}></div>
+          <div className="absolute inset-0 bg-[#081C3A]/95 backdrop-blur-md" onClick={() => !isUploading && setUploadModalDoc(null)}></div>
           <Card className="relative w-full max-w-lg p-0 overflow-hidden border-[#2F80ED]/20 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0F2A4A]/50">
                <div>
                   <h2 className="text-lg font-bold text-white tracking-tight uppercase">Upload Document</h2>
                   <p className="text-[10px] text-[#2F80ED] uppercase tracking-widest font-bold">{uploadModalDoc}</p>
                </div>
-               <button onClick={() => setUploadModalDoc(null)} disabled={isSimulatingUpload} className="text-[#8FAEDB] hover:text-white transition-colors p-2">
+               <button onClick={() => setUploadModalDoc(null)} disabled={isUploading} className="text-[#8FAEDB] hover:text-white transition-colors p-2">
                   <X size={20} />
                </button>
             </div>
@@ -322,22 +342,45 @@ export const Accreditation: React.FC<AccreditationProps> = ({ user, accounts }) 
               )}
 
               <div className="space-y-4">
+                {/* Upload progress bar */}
+                {isUploading && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-[#8FAEDB] uppercase tracking-widest font-bold">Uploading...</span>
+                      <span className="text-[10px] text-[#2F80ED] font-bold">{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-[#2F80ED] rounded-full transition-all duration-200"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {uploadError && (
+                  <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <AlertCircle size={14} className="text-red-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-red-400 leading-relaxed">{uploadError}</p>
+                  </div>
+                )}
+
                 <div className="flex items-start gap-3">
                   <Shield size={16} className="text-[#2F80ED] shrink-0 mt-0.5" />
                   <p className="text-[10px] text-[#8FAEDB] leading-relaxed uppercase tracking-wider">
-                    All documents are encrypted with AES-256 and stored in compliant sovereign infrastructure. 
+                    All documents are encrypted with AES-256 and stored in compliant sovereign infrastructure.
                     Authorized compliance officers only.
                   </p>
                 </div>
                 <Button
                   onClick={handleFinalUpload}
-                  disabled={!selectedFile || isSimulatingUpload}
+                  disabled={!selectedFile || isUploading}
                   className="w-full py-4 text-sm tracking-[0.2em] font-bold"
                 >
-                  {isSimulatingUpload ? (
+                  {isUploading ? (
                     <div className="flex items-center gap-3">
                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                       Finalizing Secure Upload...
+                       Uploading to Secure Storage...
                     </div>
                   ) : 'Confirm and Upload'}
                 </Button>
