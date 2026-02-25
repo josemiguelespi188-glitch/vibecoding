@@ -14,6 +14,7 @@ import { Button, Card, Badge, SectionHeading } from './components/UIElements';
 import { Deal, User, InvestmentRequest, InvestmentAccount, InvestmentAccountType } from './types';
 import { getAccountsByUser, getRequestsByUser, insertAccount, insertRequest } from './lib/db';
 import { Globe, Shield, BarChart2, Zap } from 'lucide-react';
+import { signOutUser } from './firebase';
 
 type AppState = 'LANDING' | 'AUTH' | 'ONBOARDING' | 'PORTAL';
 
@@ -278,6 +279,7 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
+    signOutUser().catch(() => {});
     setUser(null);
     setAppState('LANDING');
   };

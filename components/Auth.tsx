@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { Card, Button } from './UIElements';
 import { InvestmentAccountType } from '../types';
-import { ShieldCheck, ArrowRight, LogIn, UserPlus, Key, Layout } from 'lucide-react';
+import { ShieldCheck, ArrowRight, LogIn, UserPlus, Key, Layout, AlertCircle } from 'lucide-react';
+import { signInWithGoogle } from '../firebase';
 
 interface AuthProps {
   onSuccess: (userData: any) => void;
@@ -11,6 +12,8 @@ interface AuthProps {
 
 export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
   const [view, setView] = useState<'selection' | 'login' | 'signup'>('selection');
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -27,7 +30,6 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
 
   const handleDemoAccess = () => {
     setFormData(DEMO_USER);
-    // Set onboarded to true to bypass onboarding flow for the demo
     setTimeout(() => {
       onSuccess({
         ...DEMO_USER,
@@ -35,6 +37,29 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
         onboarded: true
       });
     }, 400);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setGoogleError(null);
+    try {
+      const result = await signInWithGoogle();
+      const firebaseUser = result.user;
+      onSuccess({
+        id: firebaseUser.uid,
+        full_name: firebaseUser.displayName ?? 'Investor',
+        email: firebaseUser.email ?? '',
+        account_type: InvestmentAccountType.INDIVIDUAL,
+        onboarded: false,
+      });
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+        setGoogleError('Google sign-in failed. Please try again.');
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -68,7 +93,49 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
           </div>
 
           <div className="space-y-4">
-            <button 
+            {/* Google Sign-In */}
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={googleLoading}
+              className="w-full group flex items-center justify-between p-5 bg-white border border-white/80 rounded-xl hover:bg-gray-50 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <div className="flex items-center gap-4">
+                <svg width="22" height="22" viewBox="0 0 48 48" className="shrink-0">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+                <div className="text-left">
+                  <span className="block font-bold text-gray-800 text-sm">
+                    {googleLoading ? 'Connecting...' : 'Continue with Google'}
+                  </span>
+                  <span className="text-[10px] text-gray-500 uppercase tracking-widest">Instant Secure Access</span>
+                </div>
+              </div>
+              {!googleLoading && (
+                <ArrowRight size={18} className="text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all" />
+              )}
+              {googleLoading && (
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+              )}
+            </button>
+
+            {googleError && (
+              <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <AlertCircle size={14} className="text-red-400 shrink-0" />
+                <p className="text-[11px] text-red-400">{googleError}</p>
+              </div>
+            )}
+
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>
+              <div className="relative flex justify-center text-[8px] uppercase tracking-[0.4em] font-bold text-[#8FAEDB]/40">
+                <span className="bg-[#0F2A4A] px-2">Or use credentials</span>
+              </div>
+            </div>
+
+            <button
               onClick={() => setView('login')}
               className="w-full group flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-xl hover:border-[#2F80ED] hover:bg-[#2F80ED]/5 transition-all duration-300"
             >
@@ -84,7 +151,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
               <ArrowRight size={18} className="text-[#8FAEDB] group-hover:text-[#2F80ED] group-hover:translate-x-1 transition-all" />
             </button>
 
-            <button 
+            <button
               onClick={() => setView('signup')}
               className="w-full group flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-xl hover:border-[#00E0C6] hover:bg-[#00E0C6]/5 transition-all duration-300"
             >
@@ -100,14 +167,14 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
               <ArrowRight size={18} className="text-[#8FAEDB] group-hover:text-[#00E0C6] group-hover:translate-x-1 transition-all" />
             </button>
 
-            <div className="py-4">
+            <div className="py-2">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-white/5"></span></div>
                 <div className="relative flex justify-center text-[8px] uppercase tracking-[0.4em] font-bold text-[#8FAEDB]/40"><span className="bg-[#0F2A4A] px-2">Development Access</span></div>
               </div>
             </div>
 
-            <button 
+            <button
               onClick={handleDemoAccess}
               className="w-full group flex items-center justify-between p-6 bg-[#2F80ED]/10 border border-[#2F80ED]/30 rounded-xl hover:bg-[#2F80ED]/20 cyan-glow transition-all duration-300"
             >
@@ -160,9 +227,9 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
           {view === 'signup' && (
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase tracking-widest font-bold text-[#8FAEDB]">Full Legal Name</label>
-              <input 
+              <input
                 required
-                type="text" 
+                type="text"
                 className="w-full bg-[#081C3A] border border-white/10 rounded px-4 py-3 text-white focus:border-[#2F80ED] outline-none transition-all"
                 placeholder="As shown on ID"
                 value={formData.full_name}
@@ -173,9 +240,9 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
 
           <div className="space-y-1.5">
             <label className="text-[10px] uppercase tracking-widest font-bold text-[#8FAEDB]">Email Address</label>
-            <input 
+            <input
               required
-              type="email" 
+              type="email"
               className="w-full bg-[#081C3A] border border-white/10 rounded px-4 py-3 text-white focus:border-[#2F80ED] outline-none transition-all"
               placeholder="name@firm.com"
               value={formData.email}
@@ -186,7 +253,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
           {view === 'signup' && (
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase tracking-widest font-bold text-[#8FAEDB]">Account Type</label>
-              <select 
+              <select
                 className="w-full bg-[#081C3A] border border-white/10 rounded px-4 py-3 text-white focus:border-[#2F80ED] outline-none transition-all appearance-none"
                 value={formData.account_type}
                 onChange={e => setFormData({...formData, account_type: e.target.value as InvestmentAccountType})}
@@ -200,9 +267,9 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
 
           <div className="space-y-1.5">
             <label className="text-[10px] uppercase tracking-widest font-bold text-[#8FAEDB]">Password</label>
-            <input 
+            <input
               required
-              type="password" 
+              type="password"
               className="w-full bg-[#081C3A] border border-white/10 rounded px-4 py-3 text-white focus:border-[#2F80ED] outline-none transition-all"
               placeholder="••••••••"
               value={formData.password}
@@ -222,7 +289,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
             <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
           </Button>
 
-          <button 
+          <button
             type="button"
             onClick={() => setView(view === 'login' ? 'signup' : 'login')}
             className="w-full text-[10px] text-[#8FAEDB] hover:text-white uppercase tracking-widest font-bold transition-colors"
