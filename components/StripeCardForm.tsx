@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { StripeCardElement } from '@stripe/stripe-js';
 import { stripePromise } from '../lib/stripe';
-import { CheckCircle2, Lock } from 'lucide-react';
+import { CheckCircle2, Lock, Copy, Check } from 'lucide-react';
 import { T } from './UIElements';
 
 // ─── Stripe CardElement appearance ────────────────────────────────────────────
@@ -33,6 +33,13 @@ const InnerForm: React.FC<{
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyTestCard = () => {
+    navigator.clipboard?.writeText('4242424242424242');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleAuthorize = async () => {
     if (!stripe || !elements) return;
@@ -75,6 +82,28 @@ const InnerForm: React.FC<{
   // ── Card entry form ──
   return (
     <div className="space-y-3">
+      {/* Test card hint with copy button */}
+      <button
+        onClick={copyTestCard}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-sm transition-all"
+        style={{ background: T.goldFaint, border: `1px solid ${T.gold}50` }}
+      >
+        <div className="text-left">
+          <p className="text-[8px] font-black uppercase tracking-widest" style={{ color: T.gold }}>
+            Test Card Number
+          </p>
+          <p className="text-xs font-mono font-bold tracking-wider mt-0.5" style={{ color: T.text }}>
+            4242 4242 4242 4242
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5" style={{ color: copied ? T.jade : T.gold }}>
+          {copied ? <Check size={13} /> : <Copy size={13} />}
+          <span className="text-[9px] font-black uppercase tracking-widest">
+            {copied ? 'Copied!' : 'Copy'}
+          </span>
+        </div>
+      </button>
+
       <div
         className="px-4 py-3 rounded-sm"
         style={{ background: T.raised, border: `1px solid ${T.border}` }}
@@ -108,7 +137,7 @@ const InnerForm: React.FC<{
       </button>
 
       <p className="text-[8px] text-center" style={{ color: T.textDim }}>
-        Test card: 4242 4242 4242 4242 · Any future date · Any 3-digit CVC
+        Any future expiry date · Any 3-digit CVC
       </p>
     </div>
   );
