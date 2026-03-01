@@ -17,8 +17,17 @@ import { Deal, User, InvestmentRequest, InvestmentAccount, InvestmentAccountType
 import { MOCK_ACCOUNTS } from './constants';
 import { Shield, BarChart2, Users, Zap, ArrowRight, CheckCircle } from 'lucide-react';
 import { trackEvent, trackPageView, setUserId } from './lib/analytics';
+import { AdminLogin } from './components/admin/AdminLogin';
+import { AdminLayout, AdminView } from './components/admin/AdminLayout';
+import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AdminUsers } from './components/admin/AdminUsers';
+import { AdminDeals } from './components/admin/AdminDeals';
+import { AdminMessages } from './components/admin/AdminMessages';
+import { AdminDocuments } from './components/admin/AdminDocuments';
+import { AdminSettings } from './components/admin/AdminSettings';
+import { isAdminAuthenticated } from './lib/adminAuth';
 
-type AppState = 'LANDING' | 'AUTH' | 'ONBOARDING' | 'PORTAL';
+type AppState = 'LANDING' | 'AUTH' | 'ONBOARDING' | 'PORTAL' | 'ADMIN_LOGIN' | 'ADMIN_PORTAL';
 
 // ─── Landing Page ─────────────────────────────────────────────────────────────
 
@@ -47,7 +56,7 @@ const StatPill: React.FC<{ value: string; label: string }> = ({ value, label }) 
   </div>
 );
 
-const LandingPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
+const LandingPage: React.FC<{ onStart: () => void; onAdminAccess: () => void }> = ({ onStart, onAdminAccess }) => {
   const principles = [
     { icon: Shield,   title: 'Committee-Led',        desc: 'Every deal passes a multi-stage review before reaching the platform. No exceptions.' },
     { icon: BarChart2, title: 'Institutional Reports', desc: 'Asset-level transparency, quarterly updates, and audit-grade documentation on every position.' },
@@ -201,8 +210,17 @@ const LandingPage: React.FC<{ onStart: () => void }> = ({ onStart }) => {
             ))}
           </div>
         </div>
-        <div className="max-w-6xl mx-auto mt-12 pt-8 text-center text-[9px] uppercase tracking-[0.3em]" style={{ borderTop: `1px solid ${T.border}`, color: T.textDim }}>
-          © 2025 DIVERSIFY CAPITAL. ALL RIGHTS RESERVED. NOT INVESTMENT ADVICE. ACCREDITED INVESTORS ONLY.
+        <div className="max-w-6xl mx-auto mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-3" style={{ borderTop: `1px solid ${T.border}` }}>
+          <p className="text-[9px] uppercase tracking-[0.3em]" style={{ color: T.textDim }}>
+            © 2025 DIVERSIFY CAPITAL. ALL RIGHTS RESERVED. NOT INVESTMENT ADVICE. ACCREDITED INVESTORS ONLY.
+          </p>
+          <button
+            onClick={onAdminAccess}
+            className="text-[9px] uppercase tracking-[0.25em] transition-colors hover:opacity-60"
+            style={{ color: T.textDim }}
+          >
+            Admin Portal
+          </button>
         </div>
       </footer>
     </div>
@@ -318,24 +336,44 @@ const Portal: React.FC<{ user: User; onLogout: () => void; onUpdateUser: (data: 
   );
 };
 
-// ─── Root ─────────────────────────────────────────────────────────────────────
-
 const APP_STATE_PATHS: Record<AppState, { path: string; title: string }> = {
-  LANDING:    { path: '/',            title: 'Landing'    },
-  AUTH:       { path: '/auth',        title: 'Sign In'    },
-  ONBOARDING: { path: '/onboarding',  title: 'Onboarding' },
-  PORTAL:     { path: '/portal',      title: 'Portal'     },
+  LANDING:      { path: '/',            title: 'Landing'      },
+  AUTH:         { path: '/auth',        title: 'Sign In'      },
+  ONBOARDING:   { path: '/onboarding',  title: 'Onboarding'   },
+  PORTAL:       { path: '/portal',      title: 'Portal'       },
+  ADMIN_LOGIN:  { path: '/admin/login', title: 'Admin Login'  },
+  ADMIN_PORTAL: { path: '/admin',       title: 'Admin Portal' },
 };
 
+// ─── Admin Portal Shell ────────────────────────────────────────────────────────
+
+const AdminPortal: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+  const [adminView, setAdminView] = useState<AdminView>('dashboard');
+  return (
+    <AdminLayout currentView={adminView} onNavigate={setAdminView} onLogout={onLogout}>
+      {adminView === 'dashboard' && <AdminDashboard />}
+      {adminView === 'users'     && <AdminUsers />}
+      {adminView === 'deals'     && <AdminDeals />}
+      {adminView === 'messages'  && <AdminMessages />}
+      {adminView === 'documents' && <AdminDocuments />}
+      {adminView === 'settings'  && <AdminSettings />}
+    </AdminLayout>
+  );
+};
+
+// ─── Root ─────────────────────────────────────────────────────────────────────
+
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<AppState>('LANDING');
+  const [appState, setAppState] = useState<AppState>(() =>
+    isAdminAuthenticated() ? 'ADMIN_PORTAL' : 'LANDING',
+  );
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
     // Track top-level state transitions (landing, auth, onboarding).
     // Portal internal navigation is tracked separately inside Portal.
-    if (appState !== 'PORTAL') {
+    if (appState !== 'PORTAL' && appState !== 'ADMIN_PORTAL') {
       const { path, title } = APP_STATE_PATHS[appState];
       trackPageView(path, title);
     }
@@ -354,10 +392,12 @@ const App: React.FC = () => {
     setAppState('LANDING');
   };
 
-  if (appState === 'LANDING')    return <LandingPage onStart={() => setAppState('AUTH')} />;
-  if (appState === 'AUTH')       return <Auth onSuccess={handleLoginSuccess} onBack={() => setAppState('LANDING')} />;
+  if (appState === 'LANDING')      return <LandingPage onStart={() => setAppState('AUTH')} onAdminAccess={() => setAppState('ADMIN_LOGIN')} />;
+  if (appState === 'AUTH')         return <Auth onSuccess={handleLoginSuccess} onBack={() => setAppState('LANDING')} />;
   if (appState === 'ONBOARDING' && user) return <Onboarding user={user} onComplete={() => { setUser({ ...user, onboarded: true }); setAppState('PORTAL'); }} />;
   if (appState === 'PORTAL' && user)     return <Portal user={user} onLogout={handleLogout} onUpdateUser={(d) => setUser({ ...user!, ...d })} />;
+  if (appState === 'ADMIN_LOGIN')  return <AdminLogin onSuccess={() => setAppState('ADMIN_PORTAL')} onBack={() => setAppState('LANDING')} />;
+  if (appState === 'ADMIN_PORTAL') return <AdminPortal onLogout={() => setAppState('LANDING')} />;
   return null;
 };
 
