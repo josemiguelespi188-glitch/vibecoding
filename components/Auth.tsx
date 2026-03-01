@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Input, Select, T } from './UIElements';
 import { InvestmentAccountType } from '../types';
-import { ArrowRight, LogIn, UserPlus, LayoutDashboard, Lock } from 'lucide-react';
+import { ArrowRight, ArrowLeft, LogIn, UserPlus, LayoutDashboard, Lock } from 'lucide-react';
 import { trackEvent } from '../lib/analytics';
 
 interface AuthProps {
@@ -169,6 +169,17 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
           <p className="text-center text-[9px] uppercase tracking-widest pt-4" style={{ color: T.textDim }}>
             Authorized access only · Military-grade encryption
           </p>
+
+          <button
+            onClick={onBack}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all duration-200 hover:opacity-80"
+            style={{ color: T.textDim, border: `1px solid ${T.border}`, background: 'transparent' }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.textDim; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; }}
+          >
+            <ArrowLeft size={12} />
+            Go Back
+          </button>
         </div>
       </div>
     );
@@ -267,6 +278,18 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
             style={{ color: T.textDim }}
           >
             {isLogin ? "Don't have an account? Open one" : 'Already have an account? Sign in'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setView('selection')}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all duration-200"
+            style={{ color: T.textDim, border: `1px solid ${T.border}`, background: 'transparent' }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.textDim; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; }}
+          >
+            <ArrowLeft size={12} />
+            Go Back
           </button>
         </form>
       </AuthCard>
