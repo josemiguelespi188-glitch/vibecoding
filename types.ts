@@ -156,3 +156,19 @@ export interface PlatformDocument {
   date: string;
   size_kb: number;
 }
+
+export interface DealSubmission {
+  id: string;
+  sponsor_company: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  asset_class: string;
+  target_raise: string;
+  projected_irr: string;
+  structure: string;
+  description: string;
+  preferred_call_time: string;
+  submitted_at: string;
+  status: 'new' | 'reviewed' | 'passed' | 'declined';
+}

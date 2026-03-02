@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button, T } from './UIElements';
 
-export const Navbar: React.FC<{ onAccess: () => void }> = ({ onAccess }) => {
+export const Navbar: React.FC<{
+  onAccess: () => void;
+  onPortfolio?: () => void;
+  onRaise?: () => void;
+}> = ({ onAccess, onPortfolio, onRaise }) => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -9,6 +13,8 @@ export const Navbar: React.FC<{ onAccess: () => void }> = ({ onAccess }) => {
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const linkClass = "text-[11px] font-bold uppercase tracking-widest transition-colors duration-200 hover:text-amber-400 bg-transparent border-0 cursor-pointer";
 
   return (
     <nav
@@ -39,16 +45,13 @@ export const Navbar: React.FC<{ onAccess: () => void }> = ({ onAccess }) => {
 
         {/* Links */}
         <div className="hidden md:flex items-center gap-8">
-          {['Philosophy', 'Infrastructure', 'Sponsors', 'FAQ'].map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              className="text-[11px] font-bold uppercase tracking-widest transition-colors duration-200 hover:text-amber-400"
-              style={{ color: T.textSub }}
-            >
-              {item}
-            </a>
-          ))}
+          {onPortfolio && (
+            <button onClick={onPortfolio} className={linkClass} style={{ color: T.textSub }}>Portfolio</button>
+          )}
+          {onRaise && (
+            <button onClick={onRaise} className={linkClass} style={{ color: T.textSub }}>Raise Capital</button>
+          )}
+          <a href="#philosophy" className={linkClass} style={{ color: T.textSub }}>Philosophy</a>
         </div>
 
         <Button onClick={onAccess} size="sm">

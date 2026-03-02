@@ -6,7 +6,8 @@ import {
 import {
   LayoutDashboard, Users, Briefcase, MessageSquare, FileText, Settings, LogOut,
   Search, ChevronRight, X, Plus, Edit2, Check, AlertCircle, Bell, TrendingUp,
-  DollarSign, UserCheck, Activity, BarChart2, Shield, Send,
+  DollarSign, UserCheck, Activity, BarChart2, Shield, Send, Inbox, Phone, Mail,
+  CalendarDays, CheckCircle,
 } from 'lucide-react';
 import { T } from './UIElements';
 import { adminLogout, AdminSession } from '../lib/adminAuth';
@@ -16,7 +17,7 @@ import {
   generateGrowthData, DEFAULT_SETTINGS,
   AdminUser, AdminDeal, AdminMessage, AdminDocument, AdminSettings,
 } from '../lib/adminMockData';
-import { InvestmentAccountType } from '../types';
+import { InvestmentAccountType, DealSubmission } from '../types';
 
 // ── Pre-generate mock data once ────────────────────────────────────────────
 const ALL_USERS   = generateAdminUsers();
@@ -998,27 +999,186 @@ const AdminSettingsSection: React.FC = () => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// ── SUBMISSIONS SECTION ───────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+const STATUS_COLORS: Record<string, string> = {
+  new: T.gold, reviewed: '#60a5fa', passed: T.jade, declined: '#f87171',
+};
+
+const AdminSubmissionsSection: React.FC<{ submissions: DealSubmission[] }> = ({ submissions }) => {
+  const [items, setItems] = useState<DealSubmission[]>(submissions);
+  const [selected, setSelected] = useState<DealSubmission | null>(items[0] ?? null);
+
+  // Sync when parent passes new submissions
+  React.useEffect(() => {
+    setItems(submissions);
+    if (submissions.length > 0 && !selected) setSelected(submissions[0]);
+  }, [submissions]);
+
+  const updateStatus = (id: string, status: DealSubmission['status']) => {
+    setItems((prev) => prev.map((s) => s.id === id ? { ...s, status } : s));
+    setSelected((s) => s?.id === id ? { ...s, status } : s);
+  };
+
+  const WORKFLOW: Array<{ label: string; status: DealSubmission['status'] }> = [
+    { label: 'Mark Reviewed', status: 'reviewed' },
+    { label: 'Pass / Shortlist', status: 'passed' },
+    { label: 'Decline', status: 'declined' },
+  ];
+
+  if (items.length === 0) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Deal Submissions" sub="Inbound sponsor deal submissions from the landing page" />
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <div className="w-14 h-14 rounded-sm flex items-center justify-center mb-4" style={{ background: T.raised, border: `1px solid ${T.border}` }}>
+            <Inbox size={22} style={{ color: T.textDim }} />
+          </div>
+          <p className="text-sm font-black uppercase tracking-widest mb-2" style={{ color: T.textDim }}>No Submissions Yet</p>
+          <p className="text-xs max-w-xs" style={{ color: T.textDim }}>Deal submissions from sponsors via the landing page will appear here.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        title="Deal Submissions"
+        sub={`${items.filter((s) => s.status === 'new').length} new submission(s) awaiting review`}
+      />
+      <div className="flex gap-4 h-[calc(100vh-160px)]">
+        {/* List */}
+        <div className="w-80 shrink-0 rounded-sm overflow-y-auto" style={{ background: T.surface, border: `1px solid ${T.border}` }}>
+          {items.map((sub) => (
+            <button
+              key={sub.id}
+              onClick={() => setSelected(sub)}
+              className="w-full text-left px-4 py-3.5 transition-all"
+              style={{
+                background: selected?.id === sub.id ? T.goldFaint : 'transparent',
+                borderBottom: `1px solid ${T.border}`,
+                borderLeft: `3px solid ${selected?.id === sub.id ? T.gold : 'transparent'}`,
+              }}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-black uppercase tracking-wide truncate pr-2" style={{ color: T.text }}>{sub.sponsor_company}</p>
+                <Pill label={sub.status} color={STATUS_COLORS[sub.status] ?? T.textDim} />
+              </div>
+              <p className="text-[10px] truncate" style={{ color: T.textDim }}>{sub.asset_class} · {sub.structure}</p>
+              <p className="text-[10px] mt-0.5" style={{ color: T.textDim }}>{fmtDate(sub.submitted_at)}</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Detail */}
+        {selected && (
+          <div className="flex-1 rounded-sm overflow-y-auto" style={{ background: T.surface, border: `1px solid ${T.border}` }}>
+            <div className="px-6 py-5" style={{ borderBottom: `1px solid ${T.border}` }}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.3em] mb-0.5" style={{ color: T.gold }}>Submission Detail</p>
+                  <h3 className="text-base font-black uppercase tracking-wide" style={{ color: T.text }}>{selected.sponsor_company}</h3>
+                  <p className="text-xs mt-0.5" style={{ color: T.textDim }}>Submitted {fmtDate(selected.submitted_at)}</p>
+                </div>
+                <Pill label={selected.status} color={STATUS_COLORS[selected.status] ?? T.textDim} />
+              </div>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Contact Info */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: T.textDim }}>Contact</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { icon: Users, label: selected.contact_name },
+                    { icon: Mail, label: selected.contact_email },
+                    { icon: Phone, label: selected.contact_phone || '—' },
+                    { icon: CalendarDays, label: `Preferred: ${selected.preferred_call_time}` },
+                  ].map(({ icon: Icon, label }) => (
+                    <div key={label} className="flex items-center gap-2 px-3 py-2.5 rounded-sm" style={{ background: T.raised }}>
+                      <Icon size={11} style={{ color: T.gold, flexShrink: 0 }} />
+                      <span className="text-[10px] truncate" style={{ color: T.text }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Deal Info */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: T.textDim }}>Deal Details</p>
+                <div className="space-y-0">
+                  <FieldRow label="Asset Class"   value={selected.asset_class} />
+                  <FieldRow label="Structure"     value={selected.structure} />
+                  <FieldRow label="Target Raise"  value={selected.target_raise} />
+                  <FieldRow label="Projected IRR" value={selected.projected_irr || '—'} />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: T.textDim }}>Description</p>
+                <p className="text-xs leading-relaxed p-4 rounded-sm" style={{ background: T.raised, color: T.textSub }}>
+                  {selected.description}
+                </p>
+              </div>
+
+              {/* Workflow */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: T.textDim }}>Update Status</p>
+                <div className="flex flex-wrap gap-2">
+                  {WORKFLOW.map(({ label, status }) => (
+                    <button
+                      key={status}
+                      onClick={() => updateStatus(selected.id, status)}
+                      disabled={selected.status === status}
+                      className="px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
+                      style={{
+                        background: selected.status === status ? `${STATUS_COLORS[status]}20` : T.raised,
+                        color: selected.status === status ? STATUS_COLORS[status] : T.textDim,
+                        border: `1px solid ${selected.status === status ? STATUS_COLORS[status] + '50' : T.border}`,
+                        opacity: selected.status === status ? 1 : 0.8,
+                      }}
+                    >
+                      {selected.status === status && <CheckCircle size={10} className="inline mr-1" />}
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // ── ADMIN PORTAL SHELL ────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════
-type AdminView = 'dashboard' | 'users' | 'deals' | 'messages' | 'documents' | 'settings';
+type AdminView = 'dashboard' | 'users' | 'deals' | 'messages' | 'documents' | 'settings' | 'submissions';
 
 const NAV_ITEMS: Array<{ key: AdminView; label: string; icon: React.ElementType }> = [
-  { key: 'dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
-  { key: 'users',      label: 'Users',      icon: Users },
-  { key: 'deals',      label: 'Deals',      icon: Briefcase },
-  { key: 'messages',   label: 'Messages',   icon: MessageSquare },
-  { key: 'documents',  label: 'Documents',  icon: FileText },
-  { key: 'settings',   label: 'Settings',   icon: Settings },
+  { key: 'dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
+  { key: 'users',       label: 'Users',       icon: Users },
+  { key: 'deals',       label: 'Deals',       icon: Briefcase },
+  { key: 'submissions', label: 'Submissions', icon: Inbox },
+  { key: 'messages',    label: 'Messages',    icon: MessageSquare },
+  { key: 'documents',   label: 'Documents',   icon: FileText },
+  { key: 'settings',    label: 'Settings',    icon: Settings },
 ];
 
 interface Props {
   session: AdminSession;
   onLogout: () => void;
+  submissions?: DealSubmission[];
 }
 
-export const AdminPortal: React.FC<Props> = ({ session, onLogout }) => {
+export const AdminPortal: React.FC<Props> = ({ session, onLogout, submissions = [] }) => {
   const [view, setView] = useState<AdminView>('dashboard');
   const newMsgCount = ALL_MESSAGES.filter((m) => m.status === 'new').length;
+  const newSubCount = submissions.filter((s) => s.status === 'new').length;
 
   const handleLogout = () => {
     adminLogout();
@@ -1059,6 +1219,9 @@ export const AdminPortal: React.FC<Props> = ({ session, onLogout }) => {
               {key === 'messages' && newMsgCount > 0 && (
                 <span className="ml-auto text-[9px] font-black px-1.5 py-0.5 rounded" style={{ background: T.gold, color: '#000' }}>{newMsgCount}</span>
               )}
+              {key === 'submissions' && newSubCount > 0 && (
+                <span className="ml-auto text-[9px] font-black px-1.5 py-0.5 rounded" style={{ background: T.gold, color: '#000' }}>{newSubCount}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -1074,12 +1237,13 @@ export const AdminPortal: React.FC<Props> = ({ session, onLogout }) => {
 
       {/* Main */}
       <main className="flex-1 ml-52 p-8 min-h-screen overflow-y-auto">
-        {view === 'dashboard'  && <AdminDashboardSection />}
-        {view === 'users'      && <AdminUsersSection />}
-        {view === 'deals'      && <AdminDealsSection />}
-        {view === 'messages'   && <AdminMessagesSection />}
-        {view === 'documents'  && <AdminDocumentsSection />}
-        {view === 'settings'   && <AdminSettingsSection />}
+        {view === 'dashboard'   && <AdminDashboardSection />}
+        {view === 'users'       && <AdminUsersSection />}
+        {view === 'deals'       && <AdminDealsSection />}
+        {view === 'submissions' && <AdminSubmissionsSection submissions={submissions} />}
+        {view === 'messages'    && <AdminMessagesSection />}
+        {view === 'documents'   && <AdminDocumentsSection />}
+        {view === 'settings'    && <AdminSettingsSection />}
       </main>
     </div>
   );

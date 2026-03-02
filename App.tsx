@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { Portfolio } from './components/Portfolio';
@@ -12,213 +11,15 @@ import { Onboarding } from './components/Onboarding';
 import { Distributions } from './components/Distributions';
 import { Documents } from './components/Documents';
 import { Support } from './components/Support';
-import { Button, Badge, T } from './components/UIElements';
+import { Button, T } from './components/UIElements';
 import { AdminLogin } from './components/AdminLogin';
 import { AdminPortal } from './components/AdminPortal';
+import { LandingPage } from './components/LandingPage';
 import { getAdminSession, AdminSession } from './lib/adminAuth';
-import { Deal, User, InvestmentRequest, InvestmentAccount, InvestmentAccountType } from './types';
+import { Deal, User, InvestmentRequest, InvestmentAccount, InvestmentAccountType, DealSubmission } from './types';
 import { MOCK_ACCOUNTS } from './constants';
-import { Shield, BarChart2, Users, Zap, ArrowRight, CheckCircle } from 'lucide-react';
 
 type AppState = 'LANDING' | 'AUTH' | 'ONBOARDING' | 'PORTAL' | 'ADMIN_LOGIN' | 'ADMIN_PORTAL';
-
-// ─── Landing Page ─────────────────────────────────────────────────────────────
-
-const GridBg: React.FC = () => (
-  <div
-    className="absolute inset-0 pointer-events-none"
-    style={{
-      backgroundImage: `linear-gradient(${T.border}60 1px, transparent 1px), linear-gradient(90deg, ${T.border}60 1px, transparent 1px)`,
-      backgroundSize: '60px 60px',
-      maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%)',
-    }}
-  />
-);
-
-const GlowOrb: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
-  <div
-    className="absolute rounded-full pointer-events-none"
-    style={{ width: 700, height: 700, background: `radial-gradient(circle, ${T.gold}07 0%, transparent 70%)`, ...style }}
-  />
-);
-
-const StatPill: React.FC<{ value: string; label: string }> = ({ value, label }) => (
-  <div className="px-6 py-4 rounded-sm text-center" style={{ background: T.surface, border: `1px solid ${T.border}` }}>
-    <p className="text-2xl font-black" style={{ color: T.gold }}>{value}</p>
-    <p className="text-[9px] font-bold uppercase tracking-widest mt-1" style={{ color: T.textDim }}>{label}</p>
-  </div>
-);
-
-const LandingPage: React.FC<{ onStart: () => void; onAdminAccess: () => void }> = ({ onStart, onAdminAccess }) => {
-  const principles = [
-    { icon: Shield,   title: 'Committee-Led',        desc: 'Every deal passes a multi-stage review before reaching the platform. No exceptions.' },
-    { icon: BarChart2, title: 'Institutional Reports', desc: 'Asset-level transparency, quarterly updates, and audit-grade documentation on every position.' },
-    { icon: Users,    title: 'Aligned Capital',       desc: 'Our capital is invested alongside yours. We only succeed when you do.' },
-    { icon: Zap,      title: 'Portfolio Approach',    desc: 'Strategy, geography, and asset class diversification built into every allocation.' },
-  ];
-
-  const checklist = [
-    'Accredited investors only — U.S. & International',
-    'Minimum investments from $20,000',
-    'Institutional-grade underwriting on every deal',
-    'Full document access, zero gatekeeping',
-  ];
-
-  return (
-    <div className="min-h-screen relative overflow-x-hidden" style={{ background: T.bg, color: T.text }}>
-      <Navbar onAccess={onStart} />
-
-      {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-16">
-        <GridBg />
-        <GlowOrb style={{ top: -200, left: '50%', transform: 'translateX(-50%)' }} />
-
-        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-10">
-          <Badge variant="gold" className="mx-auto">
-            Private Capital Infrastructure — Accredited Investors Only
-          </Badge>
-
-          <h1 className="text-5xl md:text-7xl font-black uppercase leading-none tracking-tight">
-            Institutional<br />
-            <span style={{ color: T.gold }}>Private Capital</span><br />
-            Done Right.
-          </h1>
-
-          <p className="text-base md:text-lg max-w-xl mx-auto leading-relaxed" style={{ color: T.textSub }}>
-            Diversify aggregates accredited capital to access institutional-grade real estate deals — lower minimums, better terms, complete transparency.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={onStart} size="lg">
-              Access the Platform <ArrowRight size={14} />
-            </Button>
-            <Button variant="outline" size="lg">
-              Investment Philosophy
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto pt-4">
-            <StatPill value="$2.1B+" label="Capital Deployed" />
-            <StatPill value="38" label="Active Deals" />
-            <StatPill value="14.2%" label="Avg. IRR" />
-          </div>
-        </div>
-
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <div className="w-px h-12 animate-pulse" style={{ background: `linear-gradient(to bottom, ${T.gold}60, transparent)` }} />
-        </div>
-      </section>
-
-      {/* ── Philosophy ───────────────────────────────────────────────── */}
-      <section id="philosophy" className="py-32 px-6 relative">
-        <GlowOrb style={{ bottom: -200, right: -300, opacity: 0.5 }} />
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-px" style={{ background: T.gold }} />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em]" style={{ color: T.gold }}>Our Philosophy</p>
-          </div>
-          <h2 className="text-4xl font-black uppercase mb-4" style={{ color: T.text }}>Institutional Discipline</h2>
-          <p className="text-base mb-16 max-w-xl" style={{ color: T.textSub }}>
-            We don't believe in picking individual deals. We build resilient, diversified capital portfolios through rigorous committee oversight.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {principles.map((p) => (
-              <div
-                key={p.title}
-                className="p-6 rounded-sm group transition-all duration-300 space-y-4"
-                style={{ background: T.surface, border: `1px solid ${T.border}` }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${T.gold}40`; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; }}
-              >
-                <div className="w-10 h-10 rounded-sm flex items-center justify-center" style={{ background: T.goldFaint, border: `1px solid ${T.gold}30` }}>
-                  <p.icon size={18} style={{ color: T.gold }} />
-                </div>
-                <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: T.text }}>{p.title}</h3>
-                <p className="text-xs leading-relaxed" style={{ color: T.textSub }}>{p.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ──────────────────────────────────────────────────────── */}
-      <section className="py-32 px-6">
-        <div className="max-w-4xl mx-auto">
-          <div
-            className="rounded-md p-12 md:p-20 text-center space-y-8 relative overflow-hidden"
-            style={{ background: T.surface, border: `1px solid ${T.border}` }}
-          >
-            <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse 60% 40% at 50% 100%, ${T.gold}05 0%, transparent 70%)` }} />
-            <div className="relative z-10 space-y-8">
-              <Badge variant="gold" className="mx-auto">Accredited Investors Only</Badge>
-              <h2 className="text-4xl font-black uppercase" style={{ color: T.text }}>
-                Ready for <span style={{ color: T.gold }}>Institutional Capital</span>?
-              </h2>
-              <ul className="space-y-2 text-left max-w-xs mx-auto">
-                {checklist.map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <CheckCircle size={14} style={{ color: T.jade, marginTop: 2, flexShrink: 0 }} />
-                    <span className="text-xs" style={{ color: T.textSub }}>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button onClick={onStart} size="lg" className="mx-auto">
-                Get Access <ArrowRight size={14} />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Footer ───────────────────────────────────────────────────── */}
-      <footer className="py-16 px-6" style={{ borderTop: `1px solid ${T.border}` }}>
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-start justify-between gap-10">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="relative w-6 h-6">
-                <div className="absolute inset-0 rotate-45 rounded-sm" style={{ background: T.gold }} />
-                <div className="absolute inset-1 rotate-45 rounded-sm" style={{ background: T.bg }} />
-              </div>
-              <span className="text-sm font-black tracking-[0.18em] uppercase" style={{ color: T.text }}>Diversify</span>
-            </div>
-            <p className="text-xs max-w-xs leading-relaxed" style={{ color: T.textDim }}>
-              DIVERSIFY™ aggregates accredited capital to negotiate institutional-grade real estate deals — lower minimums, better terms, full transparency.
-            </p>
-          </div>
-
-          <div className="flex gap-16">
-            {[
-              { heading: 'Compliance', links: ['Privacy Policy', 'Accreditation Notice', 'Risk Disclosures'] },
-              { heading: 'Platform',   links: ['How It Works', 'Sponsors', 'Deals'] },
-            ].map((col) => (
-              <div key={col.heading} className="space-y-4">
-                <h4 className="text-[9px] font-black uppercase tracking-[0.3em]" style={{ color: T.textDim }}>{col.heading}</h4>
-                <nav className="space-y-2.5">
-                  {col.links.map((link) => (
-                    <a key={link} href="#" className="block text-xs transition-colors hover:text-amber-400" style={{ color: T.textSub }}>{link}</a>
-                  ))}
-                </nav>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="max-w-6xl mx-auto mt-12 pt-8 flex items-center justify-between" style={{ borderTop: `1px solid ${T.border}` }}>
-          <p className="text-[9px] uppercase tracking-[0.3em]" style={{ color: T.textDim }}>
-            © 2025 DIVERSIFY CAPITAL. ALL RIGHTS RESERVED. NOT INVESTMENT ADVICE. ACCREDITED INVESTORS ONLY.
-          </p>
-          <button
-            onClick={onAdminAccess}
-            className="text-[9px] uppercase tracking-widest transition-opacity opacity-30 hover:opacity-70"
-            style={{ color: T.textDim }}
-          >
-            Admin Portal
-          </button>
-        </div>
-      </footer>
-    </div>
-  );
-};
 
 // ─── Portal Shell ─────────────────────────────────────────────────────────────
 
@@ -320,6 +121,7 @@ const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('LANDING');
   const [user, setUser] = useState<User | null>(null);
   const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
+  const [dealSubmissions, setDealSubmissions] = useState<DealSubmission[]>([]);
 
   useEffect(() => { window.scrollTo({ top: 0 }); }, [appState]);
 
@@ -334,12 +136,12 @@ const App: React.FC = () => {
     setAppState('ADMIN_PORTAL');
   };
 
-  if (appState === 'LANDING')    return <LandingPage onStart={() => setAppState('AUTH')} onAdminAccess={() => setAppState('ADMIN_LOGIN')} />;
+  if (appState === 'LANDING')    return <LandingPage onStart={() => setAppState('AUTH')} onAdminAccess={() => setAppState('ADMIN_LOGIN')} onSubmitDeal={(sub) => setDealSubmissions((prev) => [sub, ...prev])} />;
   if (appState === 'AUTH')       return <Auth onSuccess={handleLoginSuccess} onBack={() => setAppState('LANDING')} onAdminAccess={() => setAppState('ADMIN_LOGIN')} />;
   if (appState === 'ONBOARDING' && user) return <Onboarding user={user} onComplete={() => { setUser({ ...user, onboarded: true }); setAppState('PORTAL'); }} />;
   if (appState === 'PORTAL' && user)     return <Portal user={user} onLogout={() => { setUser(null); setAppState('LANDING'); }} onUpdateUser={(d) => setUser({ ...user!, ...d })} />;
   if (appState === 'ADMIN_LOGIN') return <AdminLogin onSuccess={handleAdminLoginSuccess} onBack={() => setAppState('LANDING')} />;
-  if (appState === 'ADMIN_PORTAL' && adminSession) return <AdminPortal session={adminSession} onLogout={() => { setAdminSession(null); setAppState('LANDING'); }} />;
+  if (appState === 'ADMIN_PORTAL' && adminSession) return <AdminPortal session={adminSession} onLogout={() => { setAdminSession(null); setAppState('LANDING'); }} submissions={dealSubmissions} />;
   return null;
 };
 
