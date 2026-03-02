@@ -253,19 +253,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onAdminAccess
     <div className="min-h-screen relative overflow-x-hidden" style={{ background: T.bg, color: T.text }}>
       <Navbar onAccess={onStart} onPortfolio={() => { portfolioRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} onRaise={onRaiseCapital} />
 
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-16">
+      {/* ── Hero + Live Deals (first viewport) ───────────────────────── */}
+      <section className="relative h-screen flex flex-col pt-16 overflow-hidden">
         <GridBg />
         <GlowOrb style={{ top: -200, left: '50%', transform: 'translateX(-50%)' }} />
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-10">
+        {/* Hero copy */}
+        <div className="relative z-10 max-w-4xl mx-auto w-full text-center px-6 pt-5 space-y-4">
           <Badge variant="gold" className="mx-auto">Private Capital Infrastructure — Accredited Investors Only</Badge>
-          <h1 className="text-5xl md:text-7xl font-black uppercase leading-none tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-black uppercase leading-none tracking-tight">
             Institutional<br />
             <span style={{ color: T.gold }}>Private Capital</span><br />
             Done Right.
           </h1>
-          <p className="text-base md:text-lg max-w-xl mx-auto leading-relaxed" style={{ color: T.textSub }}>
+          <p className="text-sm max-w-xl mx-auto leading-relaxed" style={{ color: T.textSub }}>
             Diversify aggregates accredited capital to access institutional-grade real estate deals — lower minimums, better terms, complete transparency.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -276,26 +277,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onAdminAccess
               Raise Capital With Us
             </Button>
           </div>
-          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto pt-4">
+          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
             <StatPill value="$2.1B+" label="Capital Deployed" />
             <StatPill value="38" label="Active Deals" />
             <StatPill value="14.2%" label="Avg. IRR" />
           </div>
         </div>
 
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
-          <div className="w-px h-12 animate-pulse" style={{ background: `linear-gradient(to bottom, ${T.gold}60, transparent)` }} />
-        </div>
-      </section>
-
-      {/* ── Active Deals Carousel ─────────────────────────────────────── */}
-      <section className="py-20 px-6 relative overflow-hidden">
-        <GlowOrb style={{ top: -200, left: -300, opacity: 0.4 }} />
-        <div className="max-w-6xl mx-auto relative z-10 mb-10">
-          <div className="flex items-end justify-between">
+        {/* Live Deals strip */}
+        <div className="relative z-10 flex-1 flex flex-col overflow-hidden px-6 pt-5 pb-3">
+          <div className="flex items-center justify-between mb-3 max-w-6xl mx-auto w-full">
             <div>
               <SectionLabel text="Active Opportunities" />
-              <h2 className="text-3xl font-black uppercase" style={{ color: T.text }}>
+              <h2 className="text-xl font-black uppercase" style={{ color: T.text }}>
                 Current <span style={{ color: T.gold }}>Live Deals</span>
               </h2>
             </div>
@@ -309,8 +303,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onAdminAccess
               View All Deals <ArrowRight size={11} />
             </button>
           </div>
+          <div className="flex-1 overflow-hidden">
+            <DealsCarousel onCTA={onStart} />
+          </div>
         </div>
-        <DealsCarousel onCTA={onStart} />
       </section>
 
       {/* ── Our Portfolio ─────────────────────────────────────────────── */}
