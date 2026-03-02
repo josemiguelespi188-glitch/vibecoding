@@ -10,8 +10,8 @@ interface Props {
 }
 
 export const AdminLogin: React.FC<Props> = ({ onSuccess, onBack }) => {
-  const defaultEmail = import.meta.env.DEV ? (import.meta.env.VITE_ADMIN_EMAIL ?? 'admin@axisplatform.com') : '';
-  const defaultPwd   = import.meta.env.DEV ? (import.meta.env.VITE_ADMIN_PASSWORD ?? 'AxisPortal#2026') : '';
+  const defaultEmail = import.meta.env.VITE_ADMIN_EMAIL ?? 'admin@axisplatform.com';
+  const defaultPwd   = import.meta.env.VITE_ADMIN_PASSWORD ?? 'AxisPortal#2026';
 
   const [email, setEmail]       = useState(defaultEmail);
   const [password, setPassword] = useState(defaultPwd);
