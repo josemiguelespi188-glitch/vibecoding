@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { T } from './UIElements';
 import { adminLogin } from '../lib/adminAuth';
-import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, AlertCircle, ChevronLeft } from 'lucide-react';
 
 interface Props {
   onSuccess: () => void;
@@ -36,6 +36,16 @@ export const AdminLogin: React.FC<Props> = ({ onSuccess, onBack }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: T.bg }}>
+      <div className="absolute top-6 left-8">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-bold transition-opacity hover:opacity-80"
+          style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.textDim }}
+        >
+          <ChevronLeft size={13} /> Back
+        </button>
+      </div>
+
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex items-center gap-2.5 mb-10 justify-center">
@@ -113,13 +123,6 @@ export const AdminLogin: React.FC<Props> = ({ onSuccess, onBack }) => {
           </form>
         </div>
 
-        <button
-          onClick={onBack}
-          className="mt-6 w-full text-center text-xs transition-colors hover:opacity-80"
-          style={{ color: T.textDim }}
-        >
-          ← Return to Platform
-        </button>
       </div>
     </div>
   );

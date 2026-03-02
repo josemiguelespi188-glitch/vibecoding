@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Input, Select, T } from './UIElements';
 import { InvestmentAccountType } from '../types';
-import { ArrowRight, LogIn, UserPlus, LayoutDashboard, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowRight, LogIn, UserPlus, LayoutDashboard, Lock, ShieldCheck, ChevronLeft } from 'lucide-react';
 
 interface AuthProps {
   onSuccess: (userData: any) => void;
@@ -185,8 +185,15 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack, onAdminAccess }) 
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: T.bg }}>
-      <div className="absolute top-6 left-8">
-        <Logo onBack={() => setView('selection')} />
+      <div className="absolute top-6 left-8 flex items-center gap-4">
+        <button
+          onClick={() => setView('selection')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-bold transition-opacity hover:opacity-80"
+          style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.textDim }}
+        >
+          <ChevronLeft size={13} /> Back
+        </button>
+        <Logo />
       </div>
 
       <AuthCard>
