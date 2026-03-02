@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { Portfolio } from './components/Portfolio';
@@ -16,10 +16,14 @@ import { AdminLogin } from './components/AdminLogin';
 import { AdminPortal } from './components/AdminPortal';
 import { LandingPage } from './components/LandingPage';
 import { getAdminSession, AdminSession } from './lib/adminAuth';
+import {
+  supabase, isSupabaseConfigured, getProfile, upsertProfile,
+  signOut as supabaseSignOut,
+} from './lib/supabase';
 import { Deal, User, InvestmentRequest, InvestmentAccount, InvestmentAccountType, DealSubmission } from './types';
 import { MOCK_ACCOUNTS } from './constants';
 
-type AppState = 'LANDING' | 'AUTH' | 'ONBOARDING' | 'PORTAL' | 'ADMIN_LOGIN' | 'ADMIN_PORTAL';
+type AppState = 'LANDING' | 'AUTH' | 'ONBOARDING' | 'PORTAL' | 'ADMIN_LOGIN' | 'ADMIN_PORTAL' | 'LOADING';
 
 // ─── Portal Shell ─────────────────────────────────────────────────────────────
 
@@ -115,15 +119,90 @@ const Portal: React.FC<{ user: User; onLogout: () => void; onUpdateUser: (data: 
   );
 };
 
+// ─── Loading Screen ────────────────────────────────────────────────────────────
+
+const LoadingScreen: React.FC = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: T.bg }}>
+    <div className="relative w-8 h-8 mb-6">
+      <div className="absolute inset-0 rotate-45 rounded-sm" style={{ background: T.gold }} />
+      <div className="absolute inset-1.5 rotate-45 rounded-sm" style={{ background: T.bg }} />
+    </div>
+    <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: `${T.gold}30`, borderTopColor: T.gold }} />
+  </div>
+);
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<AppState>('LANDING');
+  const [appState, setAppState] = useState<AppState>('LOADING');
   const [user, setUser] = useState<User | null>(null);
   const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
   const [dealSubmissions, setDealSubmissions] = useState<DealSubmission[]>([]);
 
-  useEffect(() => { window.scrollTo({ top: 0 }); }, [appState]);
+  useEffect(() => {
+    if (appState !== 'LOADING') window.scrollTo({ top: 0 });
+  }, [appState]);
+
+  // Load a Supabase user into app state (check profile, route to portal or onboarding)
+  const loadUserFromSupabase = useCallback(async (supabaseUser: { id: string; email?: string; user_metadata?: Record<string, string> }) => {
+    const { data: profile } = await getProfile(supabaseUser.id);
+    const googleName = supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name;
+    if (profile) {
+      const u: User = {
+        id: supabaseUser.id,
+        full_name: profile.full_name || googleName || 'Investor',
+        email: supabaseUser.email || '',
+        account_type: (profile.account_type as InvestmentAccountType) || InvestmentAccountType.INDIVIDUAL,
+        onboarded: profile.onboarded || false,
+        accreditation_status: profile.accreditation_status as any,
+        identity_status: profile.identity_status as any,
+      };
+      setUser(u);
+      setAppState(profile.onboarded ? 'PORTAL' : 'ONBOARDING');
+    } else {
+      // First sign-in — create profile row
+      const newUser: User = {
+        id: supabaseUser.id,
+        full_name: googleName || 'Investor',
+        email: supabaseUser.email || '',
+        account_type: InvestmentAccountType.INDIVIDUAL,
+        onboarded: false,
+      };
+      await upsertProfile({ id: newUser.id, full_name: newUser.full_name, onboarded: false });
+      setUser(newUser);
+      setAppState('ONBOARDING');
+    }
+  }, []);
+
+  // Session init + real-time auth listener
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setAppState('LANDING');
+      return;
+    }
+
+    // Check for existing session on page load (handles OAuth redirect callback too)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadUserFromSupabase(session.user).catch(() => setAppState('LANDING'));
+      } else {
+        setAppState('LANDING');
+      }
+    });
+
+    // Listen for sign-in / sign-out events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        loadUserFromSupabase(session.user).catch(() => setAppState('LANDING'));
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setAdminSession(null);
+        setAppState('LANDING');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [loadUserFromSupabase]);
 
   const handleLoginSuccess = (userData: User) => {
     setUser(userData);
@@ -136,10 +215,25 @@ const App: React.FC = () => {
     setAppState('ADMIN_PORTAL');
   };
 
+  const handleLogout = async () => {
+    if (isSupabaseConfigured) await supabaseSignOut();
+    setUser(null);
+    setAppState('LANDING');
+  };
+
+  const handleOnboardingComplete = async () => {
+    if (user && isSupabaseConfigured) {
+      await upsertProfile({ id: user.id, onboarded: true });
+    }
+    setUser((u) => u ? { ...u, onboarded: true } : u);
+    setAppState('PORTAL');
+  };
+
+  if (appState === 'LOADING') return <LoadingScreen />;
   if (appState === 'LANDING')    return <LandingPage onStart={() => setAppState('AUTH')} onAdminAccess={() => setAppState('ADMIN_LOGIN')} onSubmitDeal={(sub) => setDealSubmissions((prev) => [sub, ...prev])} />;
   if (appState === 'AUTH')       return <Auth onSuccess={handleLoginSuccess} onBack={() => setAppState('LANDING')} onAdminAccess={() => setAppState('ADMIN_LOGIN')} />;
-  if (appState === 'ONBOARDING' && user) return <Onboarding user={user} onComplete={() => { setUser({ ...user, onboarded: true }); setAppState('PORTAL'); }} />;
-  if (appState === 'PORTAL' && user)     return <Portal user={user} onLogout={() => { setUser(null); setAppState('LANDING'); }} onUpdateUser={(d) => setUser({ ...user!, ...d })} />;
+  if (appState === 'ONBOARDING' && user) return <Onboarding user={user} onComplete={handleOnboardingComplete} />;
+  if (appState === 'PORTAL' && user)     return <Portal user={user} onLogout={handleLogout} onUpdateUser={(d) => setUser({ ...user!, ...d })} />;
   if (appState === 'ADMIN_LOGIN') return <AdminLogin onSuccess={handleAdminLoginSuccess} onBack={() => setAppState('LANDING')} />;
   if (appState === 'ADMIN_PORTAL' && adminSession) return <AdminPortal session={adminSession} onLogout={() => { setAdminSession(null); setAppState('LANDING'); }} submissions={dealSubmissions} />;
   return null;

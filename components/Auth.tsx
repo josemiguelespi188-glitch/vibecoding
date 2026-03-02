@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Input, Select, T } from './UIElements';
 import { InvestmentAccountType } from '../types';
-import { ArrowRight, LogIn, UserPlus, LayoutDashboard, Lock, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { ArrowRight, LogIn, UserPlus, LayoutDashboard, Lock, ShieldCheck, ChevronLeft, AlertCircle } from 'lucide-react';
+import { signInWithGoogle, signIn, signUp, isSupabaseConfigured } from '../lib/supabase';
 
 const GoogleIcon: React.FC = () => (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -56,39 +57,81 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack, onAdminAccess }) 
     account_type: InvestmentAccountType.INDIVIDUAL,
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleDemoAccess = () => {
     setLoading(true);
     setTimeout(() => { onSuccess(DEMO_USER); setLoading(false); }, 500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setTimeout(() => {
-      onSuccess({ ...formData, id: 'usr_' + Math.random().toString(36).substr(2, 9), onboarded: false });
-      setLoading(false);
-    }, 400);
+
+    if (!isSupabaseConfigured) {
+      // Mock fallback (no Supabase credentials)
+      setTimeout(() => {
+        onSuccess({ ...formData, id: 'usr_' + Math.random().toString(36).substr(2, 9), onboarded: false });
+        setLoading(false);
+      }, 400);
+      return;
+    }
+
+    const isLogin = view === 'login';
+    if (isLogin) {
+      const { error: err } = await signIn(formData.email, formData.password);
+      if (err) {
+        setError(err.message === 'Invalid login credentials' ? 'Incorrect email or password.' : err.message);
+        setLoading(false);
+      }
+      // On success → onAuthStateChange in App.tsx handles navigation automatically
+    } else {
+      const { data, error: err } = await signUp(formData.email, formData.password, formData.full_name);
+      if (err) {
+        setError(err.message);
+        setLoading(false);
+      } else {
+        // Pass user data so App can route to Onboarding
+        onSuccess({
+          ...formData,
+          id: data.user?.id || 'usr_' + Math.random().toString(36).substr(2, 9),
+          onboarded: false,
+        });
+        setLoading(false);
+      }
+    }
   };
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
+    setError('');
     setLoading(true);
-    // Simulate Google OAuth popup → resolves after short delay
-    setTimeout(() => {
-      const isLogin = view === 'login';
-      const googleUser = {
-        id: 'usr_google_' + Math.random().toString(36).substr(2, 9),
-        full_name: 'Google User',
-        email: 'user@gmail.com',
-        account_type: InvestmentAccountType.INDIVIDUAL,
-        // Sign In → already onboarded; Open Account → send to Onboarding
-        onboarded: isLogin,
-        accreditation_status: isLogin ? ('Verified' as const) : undefined,
-        identity_status: isLogin ? ('Verified' as const) : undefined,
-      };
+
+    if (!isSupabaseConfigured) {
+      // Mock fallback
+      setTimeout(() => {
+        const isLogin = view === 'login';
+        onSuccess({
+          id: 'usr_google_' + Math.random().toString(36).substr(2, 9),
+          full_name: 'Google User',
+          email: 'user@gmail.com',
+          account_type: InvestmentAccountType.INDIVIDUAL,
+          onboarded: isLogin,
+          accreditation_status: isLogin ? ('Verified' as const) : undefined,
+          identity_status: isLogin ? ('Verified' as const) : undefined,
+        });
+        setLoading(false);
+      }, 900);
+      return;
+    }
+
+    // Real Google OAuth — redirects to Google then back to app
+    const { error: err } = await signInWithGoogle();
+    if (err) {
+      setError(err.message);
       setLoading(false);
-      onSuccess(googleUser);
-    }, 900);
+    }
+    // On success: browser redirects to Google → returns to app → onAuthStateChange fires
   };
 
   // ── Selection view ──────────────────────────────────────────────────────────
@@ -334,6 +377,13 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack, onAdminAccess }) 
             </label>
           </div>
 
+          {error && (
+            <div className="flex items-center gap-2 px-3 py-2.5 rounded-sm" style={{ background: '#EF444415', border: '1px solid #EF444440' }}>
+              <AlertCircle size={13} style={{ color: '#EF4444', flexShrink: 0 }} />
+              <p className="text-[10px]" style={{ color: '#EF4444' }}>{error}</p>
+            </div>
+          )}
+
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? 'Processing…' : isLogin ? 'Sign In' : 'Create Account'}
             <ArrowRight size={14} />
@@ -341,7 +391,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack, onAdminAccess }) 
 
           <button
             type="button"
-            onClick={() => setView(isLogin ? 'signup' : 'login')}
+            onClick={() => { setError(''); setView(isLogin ? 'signup' : 'login'); }}
             className="w-full text-center text-[10px] font-bold uppercase tracking-widest transition-colors hover:text-amber-400"
             style={{ color: T.textDim }}
           >
