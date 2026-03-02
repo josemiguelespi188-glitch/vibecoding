@@ -366,9 +366,9 @@ const AdminDealsSection: React.FC = () => {
 
   const openCreate = () => {
     setEditDeal({
-      id: '', title: '', location: '', asset_class: 'Multifamily', strategy: '', structure: '506(c) Reg D',
+      id: '', title: '', location: '', asset_class: 'Multifamily', strategy: '', structure: 'Reg D 506(c)',
       target_raise: 10000000, capital_raised: 0, minimum_investment: 25000, projected_irr: 12,
-      cash_yield: 7, term_years: 5, lockup_months: 60, status: 'active', committee_approved: false,
+      cash_yield: 7, term_years: 5, lockup_months: 60, status: 'active', accredited_required: true,
       sponsor: '', thumbnail_url: '', youtube_url: '', mgmt_fee: 1.5, carry_fee: 20, preferred_return: 8,
       tags: [], investor_count: 0, total_committed: 0,
     });
@@ -443,7 +443,7 @@ const AdminDealsSection: React.FC = () => {
           <div className="space-y-3">
             {([
               ['title','Title','text'], ['location','Location','text'], ['sponsor','Sponsor','text'],
-              ['asset_class','Asset Class','text'], ['strategy','Strategy','text'], ['structure','Structure','text'],
+              ['asset_class','Asset Class','text'], ['strategy','Strategy','text'],
               ['thumbnail_url','Thumbnail URL','text'], ['youtube_url','YouTube URL','text'],
             ] as [keyof AdminDeal, string, string][]).map(([key, label]) => (
               <div key={key} className="space-y-1">
@@ -451,6 +451,34 @@ const AdminDealsSection: React.FC = () => {
                 <input value={String(editDeal[key] ?? '')} onChange={(e) => setEditDeal({ ...editDeal, [key]: e.target.value })} className="w-full px-3 py-2 rounded-sm text-xs outline-none" style={{ background: T.raised, border: `1px solid ${T.border}`, color: T.text }} />
               </div>
             ))}
+
+            {/* Structure dropdown — auto-sets accredited_required */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-widest" style={{ color: T.textDim }}>Structure</label>
+              <select
+                value={editDeal.structure}
+                onChange={(e) => {
+                  const s = e.target.value;
+                  setEditDeal({ ...editDeal, structure: s, accredited_required: s === 'Reg D 506(c)' });
+                }}
+                className="w-full px-3 py-2 rounded-sm text-xs outline-none"
+                style={{ background: T.raised, border: `1px solid ${T.border}`, color: T.text }}
+              >
+                <option value="Reg D 506(c)">Reg D 506(c) — Accredited investors only</option>
+                <option value="Reg D 506(b)">Reg D 506(b) — Open (up to 35 non-accredited)</option>
+                <option value="Reg A">Reg A — Open to all investors</option>
+                <option value="Reg CF">Reg CF — Crowdfunding, open to all</option>
+              </select>
+            </div>
+
+            {/* Accredited Required indicator (read-only, driven by structure) */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-sm" style={{ background: editDeal.accredited_required ? `${T.gold}12` : `${T.jade}12`, border: `1px solid ${editDeal.accredited_required ? T.gold : T.jade}30` }}>
+              {editDeal.accredited_required
+                ? <><AlertCircle size={12} style={{ color: T.gold }} /><span className="text-[10px] font-bold" style={{ color: T.gold }}>Accredited Investors Only · Required by Reg D 506(c)</span></>
+                : <><Check size={12} style={{ color: T.jade }} /><span className="text-[10px] font-bold" style={{ color: T.jade }}>Open to All Investors</span></>
+              }
+            </div>
+
             {([
               ['target_raise','Target Raise'], ['minimum_investment','Min. Investment'],
               ['projected_irr','Proj. IRR %'], ['cash_yield','Cash Yield %'],
@@ -462,10 +490,6 @@ const AdminDealsSection: React.FC = () => {
                 <input type="number" value={Number(editDeal[key] ?? 0)} onChange={(e) => setEditDeal({ ...editDeal, [key]: parseFloat(e.target.value) })} className="w-full px-3 py-2 rounded-sm text-xs outline-none" style={{ background: T.raised, border: `1px solid ${T.border}`, color: T.text }} />
               </div>
             ))}
-            <div className="flex items-center gap-3 mt-2">
-              <input type="checkbox" id="comAppr" checked={editDeal.committee_approved} onChange={(e) => setEditDeal({ ...editDeal, committee_approved: e.target.checked })} />
-              <label htmlFor="comAppr" className="text-xs" style={{ color: T.text }}>Committee Approved</label>
-            </div>
           </div>
           <button onClick={saveDeal} className="mt-5 w-full py-2.5 rounded-sm text-xs font-black uppercase tracking-widest" style={{ background: T.gold, color: '#000' }}>
             {editDeal.id ? 'Save Changes' : 'Create Deal'}
@@ -484,7 +508,7 @@ const AdminDealsSection: React.FC = () => {
           <p className="text-sm font-black mb-1" style={{ color: T.text }}>{selected.title}</p>
           <div className="flex flex-wrap gap-1.5 mb-4">
             <Pill label={selected.status} color={selected.status === 'active' ? T.jade : T.textDim} />
-            {selected.committee_approved && <Pill label="Approved" color={T.jade} />}
+            <Pill label={selected.accredited_required ? 'Accredited Only' : 'Open to All'} color={selected.accredited_required ? T.gold : T.jade} />
             <Pill label={selected.asset_class} color={T.gold} />
           </div>
           <FieldRow label="Sponsor" value={selected.sponsor} />

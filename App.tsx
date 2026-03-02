@@ -270,13 +270,15 @@ const Portal: React.FC<{ user: User; onLogout: () => void; onUpdateUser: (data: 
     setAccounts([...accounts, newAccount]);
   };
 
+  const isAccredited = user.accreditation_status === 'Verified';
+
   return (
     <div className="min-h-screen flex" style={{ background: T.bg }}>
       <Sidebar user={user} currentView={currentView} setView={setView} onLogout={onLogout} onOpenProfile={() => setIsProfileOpen(true)} />
 
       <main className="flex-1 ml-56 p-8 overflow-y-auto min-h-screen">
-        {currentView === 'dashboard'      && <Dashboard onAllocate={setSelectedDeal} onViewPortfolio={() => setView('portfolio')} requests={requests} />}
-        {currentView === 'portfolio'      && <Portfolio onAllocate={setSelectedDeal} />}
+        {currentView === 'dashboard'      && <Dashboard onAllocate={setSelectedDeal} onViewPortfolio={() => setView('portfolio')} requests={requests} isAccredited={isAccredited} />}
+        {currentView === 'portfolio'      && <Portfolio onAllocate={setSelectedDeal} isAccredited={isAccredited} />}
         {currentView === 'accounts'       && <Accounts user={user} accounts={accounts} onAddAccount={handleAddAccount} onNavigateToAccreditation={() => setView('accreditation')} />}
         {currentView === 'accreditation'  && <Accreditation user={user} accounts={accounts} />}
         {currentView === 'distributions'  && <Distributions />}

@@ -23,6 +23,18 @@ export enum InvestmentAccountType {
   JOINT = 'Joint Account'
 }
 
+export enum DealStructure {
+  REG_D_506C = 'Reg D 506(c)',
+  REG_D_506B = 'Reg D 506(b)',
+  REG_A      = 'Reg A',
+  REG_CF     = 'Reg CF',
+}
+
+/** Structures that require all investors to be accredited */
+export const ACCREDITED_STRUCTURES: ReadonlySet<string> = new Set([
+  DealStructure.REG_D_506C,
+]);
+
 export enum RequestStatus {
   PENDING = 'pending_committee_review',
   APPROVED = 'approved',
@@ -88,7 +100,7 @@ export interface Deal {
   cash_yield: number;
   preferred_return?: number;
   term_years: number;
-  committee_approved: boolean;
+  accredited_required: boolean;
   status: 'active' | 'closed';
   image_url: string;
   sponsor: string;

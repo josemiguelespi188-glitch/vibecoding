@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, Badge, Button, SectionHeading, ProgressBar, T, Table, TableRow, TableCell, EmptyState } from './UIElements';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { TrendingUp, Layers, Clock, BarChart2, Download, ArrowRight } from 'lucide-react';
+import { TrendingUp, Layers, Clock, BarChart2, Download, ArrowRight, Lock } from 'lucide-react';
 import { Deal, InvestmentRequest, RequestStatus } from '../types';
 import { MOCK_ACCOUNTS, MOCK_DEALS, MOCK_REQUESTS } from '../constants';
 
@@ -17,6 +17,7 @@ interface DashboardProps {
   onAllocate: (deal: Deal) => void;
   onViewPortfolio: () => void;
   requests?: InvestmentRequest[];
+  isAccredited?: boolean;
 }
 
 const statusStyle = (status: string): { color: string; bg: string } => {
@@ -34,7 +35,7 @@ const GAP    = 16;  // px
 // Duplicate deals for seamless loop
 const MARQUEE_DEALS = [...MOCK_DEALS, ...MOCK_DEALS];
 
-const DealsCarousel: React.FC<{ onAllocate: (deal: Deal) => void; onViewAll: () => void }> = ({ onAllocate, onViewAll }) => {
+const DealsCarousel: React.FC<{ onAllocate: (deal: Deal) => void; onViewAll: () => void; isAccredited: boolean }> = ({ onAllocate, onViewAll, isAccredited }) => {
   const trackW = MOCK_DEALS.length * (CARD_W + GAP);
 
   return (
@@ -71,21 +72,35 @@ const DealsCarousel: React.FC<{ onAllocate: (deal: Deal) => void; onViewAll: () 
         {/* Scrolling track */}
         <div className="overflow-hidden" style={{ maskImage: 'linear-gradient(to right, transparent, black 5%, black 95%, transparent)' }}>
           <div className="marquee-track flex" style={{ gap: GAP, width: trackW * 2 }}>
-            {MARQUEE_DEALS.map((deal, i) => (
+            {MARQUEE_DEALS.map((deal, i) => {
+              const locked = deal.accredited_required && !isAccredited;
+              return (
               <div
                 key={`${deal.id}-${i}`}
                 className="rounded-sm overflow-hidden group shrink-0"
-                style={{ width: CARD_W, background: T.surface, border: `1px solid ${T.border}`, transition: 'border-color 0.2s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${T.gold}50`; }}
+                style={{ width: CARD_W, background: T.surface, border: `1px solid ${T.border}`, transition: 'border-color 0.2s', opacity: locked ? 0.7 : 1 }}
+                onMouseEnter={(e) => { if (!locked) e.currentTarget.style.borderColor = `${T.gold}50`; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; }}
               >
                 <div className="relative overflow-hidden" style={{ height: 140 }}>
-                  <img src={deal.image_url} alt={deal.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
+                  <img src={deal.image_url} alt={deal.title} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-300" style={{ filter: locked ? 'grayscale(50%)' : 'none' }} />
                   <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${T.surface} 0%, transparent 60%)` }} />
                   <div className="absolute top-3 left-3 flex gap-1.5">
                     <Badge variant="gold">{deal.asset_class}</Badge>
-                    {deal.committee_approved && <Badge variant="jade">Approved</Badge>}
+                    {deal.accredited_required && (
+                      <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm" style={{ background: `${T.gold}20`, color: T.gold, border: `1px solid ${T.gold}40` }}>
+                        <Lock size={7} /> Accredited
+                      </span>
+                    )}
                   </div>
+                  {locked && (
+                    <div className="absolute inset-0 flex items-center justify-center" style={{ background: `${T.bg}70` }}>
+                      <div className="flex flex-col items-center gap-1">
+                        <Lock size={20} style={{ color: T.textDim }} />
+                        <span className="text-[8px] font-black uppercase tracking-widest" style={{ color: T.textDim }}>Accredited Only</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="absolute bottom-3 right-3">
                     <span className="text-xl font-black" style={{ color: T.gold }}>{deal.projected_irr}%</span>
                     <span className="text-[9px] ml-1 font-bold uppercase" style={{ color: T.textDim }}>IRR</span>
@@ -99,6 +114,11 @@ const DealsCarousel: React.FC<{ onAllocate: (deal: Deal) => void; onViewAll: () 
                   <ProgressBar value={deal.progress} />
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] uppercase tracking-widest" style={{ color: T.textDim }}>{deal.progress}% Funded</span>
+                    {locked ? (
+                      <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-sm" style={{ background: T.raised, color: T.textDim, border: `1px solid ${T.border}` }}>
+                        <Lock size={9} /> Locked
+                      </span>
+                    ) : (
                     <button
                       onClick={() => onAllocate(deal)}
                       className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-sm transition-all"
@@ -108,10 +128,12 @@ const DealsCarousel: React.FC<{ onAllocate: (deal: Deal) => void; onViewAll: () 
                     >
                       Invest Now <ArrowRight size={10} />
                     </button>
+                    )}
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -119,7 +141,7 @@ const DealsCarousel: React.FC<{ onAllocate: (deal: Deal) => void; onViewAll: () 
   );
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ onAllocate, onViewPortfolio, requests: incoming }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onAllocate, onViewPortfolio, requests: incoming, isAccredited = false }) => {
   const [filter, setFilter] = useState<string>('all');
   const [ledger, setLedger] = useState<InvestmentRequest[]>([]);
 
@@ -212,7 +234,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onAllocate, onViewPortfoli
       </div>
 
       {/* ── Deals Carousel ─────────────────────────────────────────────── */}
-      <DealsCarousel onAllocate={onAllocate} onViewAll={onViewPortfolio} />
+      <DealsCarousel onAllocate={onAllocate} onViewAll={onViewPortfolio} isAccredited={isAccredited} />
 
       {/* ── KPI Cards ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

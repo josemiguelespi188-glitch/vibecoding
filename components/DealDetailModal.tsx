@@ -4,7 +4,7 @@ import { Badge, ProgressBar, T } from './UIElements';
 import {
   X, MapPin, ShieldCheck, TrendingUp, DollarSign, Clock, Building2,
   FileText, Download, PlayCircle, ArrowRight, ChevronLeft, ChevronRight,
-  Target, BarChart2, Landmark, Users, AlertTriangle,
+  Target, BarChart2, Landmark, Users, AlertTriangle, Lock,
 } from 'lucide-react';
 
 // ── Per-deal rich content ──────────────────────────────────────────────────
@@ -138,9 +138,11 @@ interface Props {
   deal: Deal;
   onClose: () => void;
   onInvest: (deal: Deal) => void;
+  isAccredited?: boolean;
 }
 
-export const DealDetailModal: React.FC<Props> = ({ deal, onClose, onInvest }) => {
+export const DealDetailModal: React.FC<Props> = ({ deal, onClose, onInvest, isAccredited = false }) => {
+  const locked = deal.accredited_required && !isAccredited;
   const content = DEAL_CONTENT[deal.id] ?? DEAL_CONTENT['d1'];
   const [tab, setTab] = useState<'overview' | 'deck' | 'docs'>('overview');
 
@@ -410,31 +412,53 @@ export const DealDetailModal: React.FC<Props> = ({ deal, onClose, onInvest }) =>
                 </div>
               </div>
 
-              {/* Committee verified */}
-              {deal.committee_approved && (
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-sm" style={{ background: `${T.jade}10`, border: `1px solid ${T.jade}30` }}>
-                  <ShieldCheck size={13} style={{ color: T.jade }} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: T.jade }}>Committee Approved</span>
-                </div>
-              )}
+              {/* Accreditation badge */}
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 rounded-sm"
+                style={{
+                  background: deal.accredited_required ? `${T.gold}10` : `${T.jade}10`,
+                  border: `1px solid ${deal.accredited_required ? T.gold : T.jade}30`,
+                }}
+              >
+                {deal.accredited_required
+                  ? <><Lock size={13} style={{ color: T.gold }} /><span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: T.gold }}>Accredited Investors Only</span></>
+                  : <><ShieldCheck size={13} style={{ color: T.jade }} /><span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: T.jade }}>Open to All Investors</span></>
+                }
+              </div>
 
               {/* Spacer */}
               <div className="flex-1" />
 
               {/* CTA */}
               <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 20 }}>
-                <button
-                  onClick={() => { onInvest(deal); onClose(); }}
-                  className="w-full py-3.5 rounded-sm flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest transition-all"
-                  style={{ background: T.gold, color: '#000' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-                >
-                  <Landmark size={14} /> Invest Now
-                </button>
-                <p className="text-[9px] text-center mt-2" style={{ color: T.textDim }}>
-                  Min. {fmt(deal.minimum_investment)} · Accredited investors only
-                </p>
+                {locked ? (
+                  <>
+                    <div
+                      className="w-full py-3.5 rounded-sm flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest"
+                      style={{ background: T.raised, color: T.textDim, border: `1px solid ${T.border}` }}
+                    >
+                      <Lock size={14} /> Accreditation Required
+                    </div>
+                    <p className="text-[9px] text-center mt-2" style={{ color: T.textDim }}>
+                      This deal is restricted to accredited investors only (Reg D 506(c))
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => { onInvest(deal); onClose(); }}
+                      className="w-full py-3.5 rounded-sm flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest transition-all"
+                      style={{ background: T.gold, color: '#000' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                    >
+                      <Landmark size={14} /> Invest Now
+                    </button>
+                    <p className="text-[9px] text-center mt-2" style={{ color: T.textDim }}>
+                      Min. {fmt(deal.minimum_investment)} · {deal.accredited_required ? 'Accredited investors only' : 'Open to all investors'}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
