@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Button, Input, Select, T } from './UIElements';
 import { InvestmentAccountType } from '../types';
-import { ArrowRight, LogIn, UserPlus, LayoutDashboard, Lock } from 'lucide-react';
+import { ArrowRight, LogIn, UserPlus, LayoutDashboard, Lock, ShieldCheck, ChevronLeft } from 'lucide-react';
 
 interface AuthProps {
   onSuccess: (userData: any) => void;
   onBack: () => void;
+  onAdminAccess?: () => void;
 }
 
 const Logo: React.FC<{ onBack?: () => void }> = ({ onBack }) => (
@@ -37,7 +38,7 @@ const DEMO_USER = {
   identity_status: 'Verified' as const,
 };
 
-export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
+export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack, onAdminAccess }) => {
   const [view, setView] = useState<'selection' | 'login' | 'signup'>('selection');
   const [formData, setFormData] = useState({
     full_name: '',
@@ -114,7 +115,29 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
             </button>
           ))}
 
-          {/* Divider — Development */}
+          {/* Admin Portal */}
+          {onAdminAccess && (
+            <button
+              onClick={onAdminAccess}
+              className="w-full flex items-center justify-between p-5 rounded-sm transition-all duration-200"
+              style={{ background: T.surface, border: `1px solid ${T.border}` }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = `#a78bfa40`; e.currentTarget.style.background = `#a78bfa08`; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = T.surface; }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: '#a78bfa15', border: '1px solid #a78bfa30' }}>
+                  <ShieldCheck size={17} style={{ color: '#a78bfa' }} />
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-black uppercase tracking-widest" style={{ color: T.text }}>Admin Portal</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: T.textDim }}>Platform management access</p>
+                </div>
+              </div>
+              <ArrowRight size={15} style={{ color: T.textDim }} />
+            </button>
+          )}
+
+          {/* Divider */}
           <div className="relative py-4">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full h-px" style={{ background: T.border }} />
@@ -126,7 +149,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
             </div>
           </div>
 
-          {/* Institutional Demo */}
+          {/* Demo */}
           <button
             onClick={handleDemoAccess}
             disabled={loading}
@@ -149,41 +172,6 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
             <ArrowRight size={15} style={{ color: T.gold }} />
           </button>
 
-          {/* Divider — Admin Access */}
-          <div className="relative py-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full h-px" style={{ background: T.border }} />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="px-3 text-[9px] font-black uppercase tracking-[0.3em]" style={{ background: T.bg, color: T.textDim }}>
-                Admin Access
-              </span>
-            </div>
-          </div>
-
-          {/* Admin Portal */}
-          <button
-            onClick={handleDemoAccess}
-            disabled={loading}
-            className="w-full flex items-center justify-between p-5 rounded-sm transition-all duration-200"
-            style={{ background: T.raised, border: `1px solid ${T.border}` }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${T.gold}40`; e.currentTarget.style.background = `${T.gold}06`; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = T.raised; }}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-9 h-9 rounded-sm flex items-center justify-center" style={{ background: T.raised, border: `1px solid ${T.gold}40` }}>
-                <LayoutDashboard size={17} style={{ color: T.gold }} />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-black uppercase tracking-widest" style={{ color: T.text }}>
-                  {loading ? 'Loading…' : 'Admin Portal'}
-                </p>
-                <p className="text-[10px] mt-0.5" style={{ color: T.textDim }}>Full admin access · Dashboard & portfolio</p>
-              </div>
-            </div>
-            <ArrowRight size={15} style={{ color: T.textDim }} />
-          </button>
-
           <p className="text-center text-[9px] uppercase tracking-widest pt-4" style={{ color: T.textDim }}>
             Authorized access only · Military-grade encryption
           </p>
@@ -198,12 +186,21 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: T.bg }}>
       <div className="absolute top-6 left-8">
-        <Logo onBack={() => setView('selection')} />
+        <Logo />
       </div>
 
       <AuthCard>
         {/* Header */}
-        <div className="px-8 pt-8 pb-6 text-center space-y-2" style={{ borderBottom: `1px solid ${T.border}` }}>
+        <div className="px-8 pt-6 pb-6 text-center space-y-2" style={{ borderBottom: `1px solid ${T.border}` }}>
+          <div className="flex justify-start mb-1">
+            <button
+              onClick={() => setView('selection')}
+              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest transition-opacity hover:opacity-70"
+              style={{ color: T.textDim }}
+            >
+              <ChevronLeft size={12} /> Back
+            </button>
+          </div>
           <div
             className="w-10 h-10 rounded-sm flex items-center justify-center mx-auto mb-3"
             style={{ background: T.goldFaint, border: `1px solid ${T.gold}40` }}
