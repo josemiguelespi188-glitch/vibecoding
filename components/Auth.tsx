@@ -121,12 +121,12 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
             </div>
             <div className="relative flex justify-center">
               <span className="px-3 text-[9px] font-black uppercase tracking-[0.3em]" style={{ background: T.bg, color: T.textDim }}>
-                Development
+                Admin Access
               </span>
             </div>
           </div>
 
-          {/* Demo */}
+          {/* Admin Portal */}
           <button
             onClick={handleDemoAccess}
             disabled={loading}
@@ -141,9 +141,9 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, onBack }) => {
               </div>
               <div className="text-left">
                 <p className="text-xs font-black uppercase tracking-widest" style={{ color: T.gold }}>
-                  {loading ? 'Loading…' : 'Institutional Demo'}
+                  {loading ? 'Loading…' : 'Admin Portal'}
                 </p>
-                <p className="text-[10px] mt-0.5" style={{ color: T.goldDim }}>Skip onboarding · Full test portfolio</p>
+                <p className="text-[10px] mt-0.5" style={{ color: T.goldDim }}>Full platform access · Dashboard & portfolio</p>
               </div>
             </div>
             <ArrowRight size={15} style={{ color: T.gold }} />
