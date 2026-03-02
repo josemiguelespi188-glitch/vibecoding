@@ -254,37 +254,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, onAdminAccess
       <Navbar onAccess={onStart} onPortfolio={() => { portfolioRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} onRaise={onRaiseCapital} />
 
       {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-16">
+      <section className="relative h-screen flex flex-col items-center justify-center px-6 pt-16 overflow-hidden">
         <GridBg />
         <GlowOrb style={{ top: -200, left: '50%', transform: 'translateX(-50%)' }} />
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-10">
+        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-5">
           <Badge variant="gold" className="mx-auto">Private Capital Infrastructure — Accredited Investors Only</Badge>
-          <h1 className="text-5xl md:text-7xl font-black uppercase leading-none tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-black uppercase leading-none tracking-tight">
             Institutional<br />
             <span style={{ color: T.gold }}>Private Capital</span><br />
             Done Right.
           </h1>
-          <p className="text-base md:text-lg max-w-xl mx-auto leading-relaxed" style={{ color: T.textSub }}>
+          <p className="text-sm md:text-base max-w-xl mx-auto leading-relaxed" style={{ color: T.textSub }}>
             Diversify aggregates accredited capital to access institutional-grade real estate deals — lower minimums, better terms, complete transparency.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button onClick={onStart} size="lg">
               Invest Now <ArrowRight size={14} />
             </Button>
-            <Button variant="outline" size="lg" onClick={() => scrollTo('raise')}>
+            <Button variant="outline" size="lg" onClick={onRaiseCapital}>
               Raise Capital With Us
             </Button>
           </div>
-          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto pt-4">
+          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
             <StatPill value="$2.1B+" label="Capital Deployed" />
             <StatPill value="38" label="Active Deals" />
             <StatPill value="14.2%" label="Avg. IRR" />
           </div>
         </div>
 
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
-          <div className="w-px h-12 animate-pulse" style={{ background: `linear-gradient(to bottom, ${T.gold}60, transparent)` }} />
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+          <div className="w-px h-10 animate-pulse" style={{ background: `linear-gradient(to bottom, ${T.gold}60, transparent)` }} />
         </div>
       </section>
 
